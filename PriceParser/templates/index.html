@@ -1,0 +1,450 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Price Parser Vodoparad.ru</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input, button {
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        input {
+            width: 400px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+            button:hover {
+                background: #0056b3;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        .price {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block !important;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block !important;
+        }
+
+        #noProducts, #noLogs {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .product-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+            .product-link:hover {
+                text-decoration: underline;
+            }
+
+        .actions button {
+            padding: 6px 12px;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+
+            .actions button:nth-child(2) {
+                background: #dc3545;
+            }
+
+                .actions button:nth-child(2):hover {
+                    background: #c82333;
+                }
+
+        /* Стили для таблицы логов */
+        #logsTable th, #logsTable td {
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        #logsTable .status-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        #logsTable .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* Оверлей загрузки */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .overlay-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 320px;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingText {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Price Parser Vodoparad.ru</h1>
+
+        <!-- Добавление товара -->
+        <div class="card">
+            <h3>➕ Добавить товар</h3>
+            <input type="url" id="productUrl" placeholder="https://www.vodoparad.ru/product/...">
+            <button onclick="addProduct()">Добавить</button>
+        </div>
+
+        <!-- Панель управления -->
+        <div class="card">
+            <h3>Панель управления</h3>
+            <button onclick="runParser()">Запустить парсинг</button>
+            <div id="status"></div>
+        </div>
+
+        <!-- Список отслеживаемых товаров -->
+        <div class="card">
+            <h3>Отслеживаемые товары</h3>
+            <div id="loading">Загрузка товаров...</div>
+            <table id="productsTable" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>Цена</th>
+                        <th>Магазин</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="productsBody"></tbody>
+            </table>
+            <div id="noProducts" style="display:none;">
+                <p>Товары ещё не добавлены.</p>
+                <p>Добавьте первый товар выше.</p>
+            </div>
+        </div>
+
+        <!-- Логи парсинга -->
+        <div class="card">
+            <h3>📋 Логи парсинга</h3>
+            <table id="logsTable" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Время</th>
+                        <th>URL</th>
+                        <th>Статус</th>
+                        <th>Цена</th>
+                        <th>Магазин</th>
+                        <th>Сообщение</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody"></tbody>
+            </table>
+            <div id="noLogs" style="display:none;">
+                Нет записей в логе.
+            </div>
+        </div>
+    </div>
+
+    <!-- Оверлей загрузки -->
+    <div id="loadingOverlay">
+        <div class="overlay-content">
+            <div class="spinner"></div>
+            <p id="loadingText">Парсинг товаров...<br>Пожалуйста, подождите</p>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка при открытии страницы
+        document.addEventListener('DOMContentLoaded', loadProducts);
+
+        // Показ уведомлений
+        function showMessage(text, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = text;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+                statusDiv.textContent = '';
+            }, 4000);
+        }
+
+        // Добавление товара
+        async function addProduct() {
+            const url = document.getElementById('productUrl').value.trim();
+            if (!url) {
+                showMessage('Введите URL товара', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('url', url);
+
+            try {
+                const response = await fetch('/add_product', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                showMessage(result.message, result.success ? 'success' : 'error');
+
+                if (result.success) {
+                    document.getElementById('productUrl').value = '';
+                    loadProducts();
+                }
+            } catch (error) {
+                showMessage('Ошибка сети: ' + error.message, 'error');
+            }
+        }
+
+        // Массовый парсинг
+        async function runParser() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('loadingText').innerHTML = 'Парсинг всех товаров...<br>Это может занять некоторое время';
+
+            try {
+                const response = await fetch('/run_parser', { method: 'POST' });
+                const result = await response.json();
+                showMessage('✅ ' + result.message, result.success ? 'success' : 'error');
+            } catch (error) {
+                showMessage('❌ Ошибка: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                loadProducts();
+            }
+        }
+
+        // Обновление одного товара
+        async function updateProduct(productId) {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('loadingText').innerHTML = 'Обновляем товар...<br>Подождите';
+
+            try {
+                const response = await fetch(`/update_product/${productId}`, { method: 'POST' });
+                const result = await response.json();
+                showMessage(result.success ? '✅ Цена обновлена!' : '❌ ' + result.message,
+                    result.success ? 'success' : 'error');
+            } catch (err) {
+                showMessage('Ошибка сети', 'error');
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                loadProducts();
+            }
+        }
+
+        // Удаление товара
+        async function deleteProduct(productId) {
+            if (!confirm('Точно удалить товар из списка? Это действие нельзя отменить.')) {
+                return;
+            }
+
+            showMessage('Удаляем товар...', 'success');
+
+            try {
+                const response = await fetch(`/delete_product/${productId}`, { method: 'POST' });
+                const result = await response.json();
+                showMessage(result.success ? '✅ Товар удалён' : '❌ ' + result.message,
+                    result.success ? 'success' : 'error');
+            } catch (err) {
+                showMessage('Ошибка сети', 'error');
+            } finally {
+                loadProducts();
+            }
+        }
+
+        // Загрузка списка товаров
+        async function loadProducts() {
+            try {
+                const response = await fetch('/get_products');
+                const products = await response.json();
+
+                const table = document.getElementById('productsTable');
+                const tbody = document.getElementById('productsBody');
+                const loading = document.getElementById('loading');
+                const noProducts = document.getElementById('noProducts');
+
+                if (loading) loading.style.display = 'none';
+
+                if (!products || products.length === 0) {
+                    table.style.display = 'none';
+                    noProducts.style.display = 'block';
+                    return;
+                }
+
+                table.style.display = 'table';
+                noProducts.style.display = 'none';
+                tbody.innerHTML = '';
+
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                            <td>
+                                <a href="${product.url}" class="product-link" target="_blank">
+                                    ${product.name || product.url.substring(0, 60) + '...'}
+                                </a>
+                            </td>
+                            <td class="price">
+                                ${product.price ? product.price.toFixed(2) + ' ₽' : 'Нет цены'}
+                            </td>
+                            <td>${product.shop || 'vodoparad.ru'}</td>
+                            <td>
+                                <div class="actions">
+                                    <button onclick="updateProduct(${product.id})">Обновить</button>
+                                    <button onclick="deleteProduct(${product.id})">Удалить</button>
+                                </div>
+                            </td>
+                        `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки товаров:', error);
+                showMessage('Ошибка загрузки товаров', 'error');
+            }
+
+            // После товаров — обновляем логи
+            loadLogs();
+        }
+
+        // Загрузка логов парсинга
+        async function loadLogs() {
+            try {
+                const response = await fetch('/get_logs');
+                const logs = await response.json();
+
+                const table = document.getElementById('logsTable');
+                const tbody = document.getElementById('logsBody');
+                const noLogs = document.getElementById('noLogs');
+
+                if (!logs || logs.length === 0) {
+                    table.style.display = 'none';
+                    noLogs.style.display = 'block';
+                    return;
+                }
+
+                table.style.display = 'table';
+                noLogs.style.display = 'none';
+                tbody.innerHTML = '';
+
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    const statusClass = log.status === 'success' ? 'status-success' : 'status-error';
+
+                    row.innerHTML = `
+                            <td>${log.time}</td>
+                            <td><a href="${log.url}" target="_blank">${log.url.substring(0, 50) + '...'}</a></td>
+                            <td class="${statusClass}">${log.status.toUpperCase()}</td>
+                            <td>${log.price ? log.price.toFixed(2) + ' ₽' : '-'}</td>
+                            <td>${log.shop}</td>
+                            <td>${log.message}</td>
+                        `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки логов:', error);
+            }
+        }
+    </script>
+</body>
+</html>
