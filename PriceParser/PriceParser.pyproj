@@ -24,7 +24,7 @@
     <Compile Include="app.py" />
     <Compile Include="database.py" />
     <Compile Include="parser.py" />
-    <Compile Include="PriceParser.py" />
+    <Compile Include="price_utils.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />

@@ -1,49 +1,9 @@
-﻿from flask import Flask, render_template, request, jsonify
-import sqlite3
+from flask import Flask, render_template, request, jsonify
+from database import get_connection, init_database
 from parser import parse_product
 import time
 
 app = Flask(__name__)
-
-def init_db():
-    conn = sqlite3.connect('prices.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT NOT NULL UNIQUE,
-            name TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS prices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            price REAL NOT NULL,
-            shop TEXT DEFAULT 'vodoparad.ru',
-            parsed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (product_id) REFERENCES products(id)
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS parsing_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_url TEXT,
-            status TEXT,
-            price REAL,
-            shop_name TEXT,
-            message TEXT,
-            parsed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    print("База данных готова")
 
 @app.route('/')
 def index():
@@ -56,7 +16,7 @@ def add_product():
         return jsonify({'success': False, 'message': 'Некорректный URL'})
 
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute('SELECT id FROM products WHERE url = ?', (url,))
@@ -86,7 +46,7 @@ def add_product():
 @app.route('/get_products')
 def get_products():
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             SELECT p.id, p.url, p.name,
@@ -113,7 +73,7 @@ def get_products():
 @app.route('/run_parser', methods=['POST'])
 def run_parser():
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT id, url FROM products')
         products = cursor.fetchall()
@@ -126,7 +86,7 @@ def run_parser():
         for product_id, url in products:
             data = parse_product(url)
             if data and data['price'] > 0:
-                conn = sqlite3.connect('prices.db')
+                conn = get_connection()
                 cursor = conn.cursor()
                 cursor.execute('INSERT INTO prices (product_id, price, shop) VALUES (?, ?, ?)',
                                (product_id, data['price'], 'vodoparad.ru'))
@@ -148,7 +108,7 @@ def run_parser():
 @app.route('/update_product/<int:product_id>', methods=['POST'])
 def update_single(product_id):
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT url FROM products WHERE id = ?', (product_id,))
         row = cursor.fetchone()
@@ -161,7 +121,7 @@ def update_single(product_id):
         if not data or data['price'] <= 0:
             return jsonify({'success': False, 'message': 'Не удалось спарсить цену'})
 
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('INSERT INTO prices (product_id, price, shop) VALUES (?, ?, ?)',
                        (product_id, data['price'], 'vodoparad.ru'))
@@ -177,7 +137,7 @@ def update_single(product_id):
 @app.route('/delete_product/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         
         # Удаляем цены
@@ -196,7 +156,7 @@ def delete_product(product_id):
 @app.route('/get_logs')
 def get_logs():
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             SELECT id, product_url, status, price, shop_name, message, parsed_at
@@ -221,9 +181,9 @@ def get_logs():
         return jsonify([])
 
 if __name__ == '__main__':
-    init_db()
+    init_database()
     print("=" * 60)
     print("🚀 Price Parser Vodoparad.ru запущен!")
     print("📊 Открой: http://localhost:5000")
     print("=" * 60)
-    app.run(debug=True, port=5000)
+    app.run(host="127.0.0.1", port=5000)

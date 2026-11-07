@@ -1,0 +1,29 @@
+# IDE settings and build output
+**/.vs/
+**/.idea/
+**/bin/
+**/obj/
+*.user
+*.suo
+
+# Local databases and runtime data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/

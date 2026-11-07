@@ -1,4 +1,6 @@
-﻿import sqlite3
+import sqlite3
+from database import get_connection
+from price_utils import parse_price
 import time
 from typing import Optional, Dict
 
@@ -17,8 +19,9 @@ def log_parsing(url: str, status: str, price: float, shop: str = 'vodoparad.ru',
     """
     Записывает результат парсинга в таблицу parsing_log.
     """
+    conn = None
     try:
-        conn = sqlite3.connect('prices.db')
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO parsing_log (product_url, status, price, shop_name, message, parsed_at)
@@ -28,7 +31,8 @@ def log_parsing(url: str, status: str, price: float, shop: str = 'vodoparad.ru',
     except sqlite3.Error as e:
         print(f"Ошибка записи в лог: {e}")
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
 
 # ========================
@@ -105,9 +109,9 @@ def parse_product(url: str, timeout: int = 15) -> Optional[Dict[str, object]]:
 
                 if price_text:
                     # Извлекаем цифры (поддержка пробелов и запятых)
-                    digits = ''.join(filter(str.isdigit, price_text.replace(' ', '')))
-                    if digits:
-                        price = float(digits)
+                    parsed_price = parse_price(price_text)
+                    if parsed_price is not None:
+                        price = parsed_price
                         break
             except TimeoutException:
                 continue  # Пробуем следующий селектор
