@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -192,7 +192,7 @@
 
         <!-- Добавление товара -->
         <div class="card">
-            <h3>➕ Добавить товар</h3>
+            <h3>Добавить товар</h3>
             <input type="url" id="productUrl" placeholder="https://www.vodoparad.ru/product/...">
             <button onclick="addProduct()">Добавить</button>
         </div>
@@ -227,7 +227,7 @@
 
         <!-- Логи парсинга -->
         <div class="card">
-            <h3>📋 Логи парсинга</h3>
+            <h3>Логи парсинга</h3>
             <table id="logsTable" style="display:none;">
                 <thead>
                     <tr>
@@ -307,9 +307,9 @@
             try {
                 const response = await fetch('/run_parser', { method: 'POST' });
                 const result = await response.json();
-                showMessage('✅ ' + result.message, result.success ? 'success' : 'error');
+                showMessage('' + result.message, result.success ? 'success' : 'error');
             } catch (error) {
-                showMessage('❌ Ошибка: ' + error.message, 'error');
+                showMessage('Ошибка: ' + error.message, 'error');
             } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 loadProducts();
@@ -324,7 +324,7 @@
             try {
                 const response = await fetch(`/update_product/${productId}`, { method: 'POST' });
                 const result = await response.json();
-                showMessage(result.success ? '✅ Цена обновлена!' : '❌ ' + result.message,
+                showMessage(result.success ? 'Цена обновлена!' : '' + result.message,
                     result.success ? 'success' : 'error');
             } catch (err) {
                 showMessage('Ошибка сети', 'error');
@@ -345,7 +345,7 @@
             try {
                 const response = await fetch(`/delete_product/${productId}`, { method: 'POST' });
                 const result = await response.json();
-                showMessage(result.success ? '✅ Товар удалён' : '❌ ' + result.message,
+                showMessage(result.success ? 'Товар удалён' : '' + result.message,
                     result.success ? 'success' : 'error');
             } catch (err) {
                 showMessage('Ошибка сети', 'error');

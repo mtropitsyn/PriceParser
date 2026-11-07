@@ -90,7 +90,6 @@ def run_parser():
                 cursor = conn.cursor()
                 cursor.execute('INSERT INTO prices (product_id, price, shop) VALUES (?, ?, ?)',
                                (product_id, data['price'], 'vodoparad.ru'))
-                # Обновляем название, если оно лучше
                 cursor.execute('UPDATE products SET name = ? WHERE id = ?', (data['name'], product_id))
                 conn.commit()
                 conn.close()
@@ -182,8 +181,5 @@ def get_logs():
 
 if __name__ == '__main__':
     init_database()
-    print("=" * 60)
-    print("🚀 Price Parser Vodoparad.ru запущен!")
-    print("📊 Открой: http://localhost:5000")
-    print("=" * 60)
+    print("PriceParser: http://localhost:5000")
     app.run(host="127.0.0.1", port=5000)

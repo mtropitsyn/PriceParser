@@ -12,9 +12,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
 
-# ========================
-# Логирование парсинга
-# ========================
 def log_parsing(url: str, status: str, price: float, shop: str = 'vodoparad.ru', message: str = '') -> None:
     """
     Записывает результат парсинга в таблицу parsing_log.
@@ -35,9 +32,6 @@ def log_parsing(url: str, status: str, price: float, shop: str = 'vodoparad.ru',
             conn.close()
 
 
-# ========================
-# Настройка драйвера
-# ========================
 def get_driver(headless: bool = True) -> webdriver.Chrome:
     """
     Создаёт и возвращает настроенный Chrome-драйвер.
@@ -45,7 +39,7 @@ def get_driver(headless: bool = True) -> webdriver.Chrome:
     options = Options()
 
     if headless:
-        options.add_argument('--headless=new')  # Новый headless-режим (быстрее и стабильнее)
+        options.add_argument('--headless=new')
 
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -71,9 +65,6 @@ def get_driver(headless: bool = True) -> webdriver.Chrome:
         raise
 
 
-# ========================
-# Основная функция парсинга
-# ========================
 def parse_product(url: str, timeout: int = 15) -> Optional[Dict[str, object]]:
     """
     Парсит страницу товара на vodoparad.ru и возвращает словарь с данными.
@@ -108,7 +99,7 @@ def parse_product(url: str, timeout: int = 15) -> Optional[Dict[str, object]]:
                     price_text = price_elem.text.strip()
 
                 if price_text:
-                    # Извлекаем цифры (поддержка пробелов и запятых)
+                    # Учитываем десятичный разделитель в цене
                     parsed_price = parse_price(price_text)
                     if parsed_price is not None:
                         price = parsed_price
